@@ -1,4 +1,4 @@
-# LiME – Linux Memory Extractor
+# LiME - Linux Memory Extractor
 ## Contents
 * [Compiling](#Compile)
   * [Linux](#Linux)
@@ -22,10 +22,10 @@ For detailed instructions on using LKM see https://www.kernel.org/doc/Documentat
 LiME can be compiled externally from the target in order to provide a more forensically sound and secure method. Follow this [guide](./external_modules.md) to learn how.
 
 ### Debug  <a name="Debug"/>
-When compiling LiME with the default Makefile, using the command “make debug” will compile a LiME module with extra debug output.  The output can be read by using the dmesg command on Linux.
+When compiling LiME with the default Makefile, using the command `make debug` will compile a LiME module with extra debug output.  The output can be read by using the dmesg command on Linux.
 
 ### Symbols  <a name="Symbols"/>
-When compiling LiME with the default Makefile, using the command “make symbols" will compile a LiME module without stripping symbols. This is useful for tools such as Volatility where one can create a profile without loading second module.
+When compiling LiME with the default Makefile, using the command `make symbols` will compile a LiME module without stripping symbols. This is useful for tools such as Volatility where one can create a profile without loading second module.
 
 ### Android <a name="Android"/>
 In order to cross-compile LiME for use on an Android device, additional steps are required.
@@ -41,7 +41,7 @@ Disclaimer:  This list may be incomplete. Please let us know if we've missed any
 
 #### SETTING UP THE ENVIRONMENT
 In order to simplify the process, we will first set some environment variables.  In a terminal, type the following commands.
-```
+```bash
 export SDK_PATH=/path/to/android-sdk-linux/
 export NDK_PATH=/path/to/android-ndk/
 export KSRC_PATH=/path/to/kernel-source/
@@ -51,7 +51,7 @@ export LIME_SRC=/path/to/lime/src
 
 #### PREPARING THE KERNEL SOURCE
 We must retrieve and copy the kernel config from our device.
-```
+```bash
 cd $SDK_PATH/platform-tools
 ./adb pull /proc/config.gz
 gunzip ./config.gz
@@ -59,14 +59,14 @@ cp config $KSRC_PATH/.config
 ```
 
 Next we have to prepare our kernel source for our module.
-```
+```bash
 $ cd $KSRC_PATH
 $ make ARCH=arm CROSS_COMPILE=$CC_PATH/arm-eabi- modules_prepare
 ```
 
 #### PREPARING THE MODULE FOR COMPILATION
 We need to create a Makefile to cross-compile our kernel module.  A sample Makefile for cross-compiling is shipped with the LiME source.  The contents of your Makefile should be similar to the following:
-```
+```makefile
 obj-m := lime.o
 lime-objs := main.o tcp.o disk.o
 KDIR := /path/to/kernel-source
@@ -77,16 +77,16 @@ default:
 ```
 
 #### COMPILING  THE MODULE
-```
+```bash
 cd $LIME_SRC
 make
 ```
 
 ## Usage <a name="Usage"/>
-To illustrate the use of LiME, we will now walk through two examples of acquiring memory from an Android device.  We will first discuss the acquisition of memory over a TCP connection, followed by a discussion of acquiring a memory dump via the device’s SD card.  The use of LiME on other Linux devices is similar; however, the use of the Android debug bridge (adb) is not needed.
+To illustrate the use of LiME, we will now walk through two examples of acquiring memory from an Android device.  We will first discuss the acquisition of memory over a TCP connection, followed by a discussion of acquiring a memory dump via the device's SD card.  The use of LiME on other Linux devices is similar; however, the use of the Android debug bridge (adb) is not needed.
 
 ### Parameters <a name="Params"/>
-Starting in version 1.1, LiME now supports multiple output formats, including a custom lime format which integrates with Volatility’s new lime address space.  This means that additional parameters are needed when installing the LiME kernel module.
+Starting in version 1.1, LiME now supports multiple output formats, including a custom lime format which integrates with Volatility's new lime address space.  This means that additional parameters are needed when installing the LiME kernel module.
 
 NOTE: There is a bug in the insmod utility on some Android devices.  Multiple kernel module parameters must be wrapped in quotation marks, otherwise only the first parameter will be parsed.  See sections 4.2 and 4.3 for examples.
 ```
@@ -102,8 +102,8 @@ timeout       Optional. If it takes longer than the specified  timeout (in milli
 ```
 
 ### Acquisition of Memory over TCP <a name="TCP"/>
-The first step of the process is to copy the kernel module to the device’s SD card using the Android Debug Bridge (adb), which supports a number of interactions with an Android device tethered via USB.  We then use adb to setup a port-forwarding tunnel from a TCP port on the device to a TCP port on the local host.   The use of adb for network transfer eliminates the need to modify the networking configuration on the device or introduce a wireless peer—all network data is transferred via USB.  For the example below, we have chosen TCP port 4444. We then obtain a root shell on the device by using adb and su.  To accomplish this, we run the following commands with the phone plugged into our computer and debugging enabled on the device.
-```
+The first step of the process is to copy the kernel module to the device's SD card using the Android Debug Bridge (adb), which supports a number of interactions with an Android device tethered via USB.  We then use adb to setup a port-forwarding tunnel from a TCP port on the device to a TCP port on the local host.   The use of adb for network transfer eliminates the need to modify the networking configuration on the device or introduce a wireless peer-all network data is transferred via USB.  For the example below, we have chosen TCP port 4444. We then obtain a root shell on the device by using adb and su.  To accomplish this, we run the following commands with the phone plugged into our computer and debugging enabled on the device.
+```bash
 adb push lime.ko /sdcard/lime.ko
 adb forward tcp:4444 tcp:4444
 adb shell
@@ -113,33 +113,33 @@ su
 
 Memory acquisition over the TCP tunnel is then a two-part process.  First, the target device must listen on a specified TCP port and then we must connect to the device from the host computer.  When the socket is connected, the kernel module will automatically send the acquired RAM image to the host device.
 
-In the adb root shell, we install our kernel module using the insmod command.  To instruct the module to dump memory via TCP, we set the path parameter to “tcp”, followed by a colon and then the port number that adb is forwarding.  On our host computer, we connect to this port with netcat and redirect output to a file.  We also select the “lime” formatting option.  When the acquisition process is complete, LiME will terminate the TCP connection.
+In the adb root shell, we install our kernel module using the insmod command.  To instruct the module to dump memory via TCP, we set the path parameter to "tcp", followed by a colon and then the port number that adb is forwarding.  On our host computer, we connect to this port with netcat and redirect output to a file.  We also select the "lime" formatting option.  When the acquisition process is complete, LiME will terminate the TCP connection.
 The following command loads the kernel module via adb on the target Android device:
-```
-insmod /sdcard/lime.ko “path=tcp:4444 format=lime”
+```bash
+insmod /sdcard/lime.ko "path=tcp:4444 format=lime"
 ```
 
-On the host, the following command captures the memory dump via TCP port 444 to the file “ram.lime”:
-```
+On the host, the following command captures the memory dump via TCP port 444 to the file `ram.lime`:
+```bash
 nc localhost 4444 > ram.lime
 ```
 
 ### Acquisition of Memory to Disk (SD-Card) <a name="Disk"/>
-In some cases, such as when the investigator wants to make sure no network buffers are overwritten, disk-based acquisition may be preferred to network acquisition.  To accommodate this situation, LiME provides the option to write memory images to the device’s file system.  On Android, the logical place to write is the device’s SD card.
+In some cases, such as when the investigator wants to make sure no network buffers are overwritten, disk-based acquisition may be preferred to network acquisition.  To accommodate this situation, LiME provides the option to write memory images to the device's file system.  On Android, the logical place to write is the device's SD card.
 
-Since the SD card could potentially contain other relevant evidence to the case, the investigator may wish to image the SD card first in order to save unallocated space.  Unfortunately, some Android phones, such as the HTC EVO 4G and the Droid series, place the removable SD card to be either under or obstructed by the phone’s battery, making it impossible to remove the SD card without powering off the phone (these phones will power down if the battery is removed, even if they are plugged into a power source!).  For this reason, the investigator needs to first image the SD card, and then subsequently write the memory image to it. While this process violates the typical “order of volatility” rule of thumb in forensic acquisition, namely, obtaining the most volatile information first, it is necessary to properly preserve all evidence.
+Since the SD card could potentially contain other relevant evidence to the case, the investigator may wish to image the SD card first in order to save unallocated space.  Unfortunately, some Android phones, such as the HTC EVO 4G and the Droid series, place the removable SD card to be either under or obstructed by the phone's battery, making it impossible to remove the SD card without powering off the phone (these phones will power down if the battery is removed, even if they are plugged into a power source!).  For this reason, the investigator needs to first image the SD card, and then subsequently write the memory image to it. While this process violates the typical "order of volatility" rule of thumb in forensic acquisition, namely, obtaining the most volatile information first, it is necessary to properly preserve all evidence.
 
 Fortunately, imaging the SD card on an Android device that will be subjected to live forensic analysis (including memory dumping) does not require removal of the SD card.  Tethering the device to a Linux machine, for example, and activating USB Storage exposes a /dev/sd? device that can be imaged using traditional means (e.g., using dd on the Linux box). Activating USB Storage mode unmounts the SD card on the Android device, so a forensically valid image can be obtained.
 
-With USB Storage mode deactivated, we copy the LiME kernel module to the device using the same steps described in the last section.  When installing the module using insmod, we set the path parameter to /sdcard/ram.lime to specify the file in which to write the memory dump.  We also select the “lime” format option:
-```
-insmod /sdcard/lime.ko “path=/sdcard/ram.lime format=lime”
+With USB Storage mode deactivated, we copy the LiME kernel module to the device using the same steps described in the last section.  When installing the module using insmod, we set the path parameter to /sdcard/ram.lime to specify the file in which to write the memory dump.  We also select the `lime` format option:
+```bash
+insmod /sdcard/lime.ko "path=/sdcard/ram.lime format=lime"
 ```
 
 Once the acquisition process is complete, we can power down the phone, remove the SD card from the phone, and transfer the memory dump to the examination machine. If the phone cannot be powered down, adb can also be used to transfer the memory dump to the investigator's machine.
 
 ## LiME Memory Range Header Version 1 Specification <a name="Spec"/>
-```
+```c
 typedef struct {
     unsigned int magic;        // Always 0x4C694D45 (LiME)
     unsigned int version;        // Header version number
