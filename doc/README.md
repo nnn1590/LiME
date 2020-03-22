@@ -113,7 +113,7 @@ su
 
 Memory acquisition over the TCP tunnel is then a two-part process.  First, the target device must listen on a specified TCP port and then we must connect to the device from the host computer.  When the socket is connected, the kernel module will automatically send the acquired RAM image to the host device.
 
-In the adb root shell, we install our kernel module using the insmod command.  To instruct the module to dump memory via TCP, we set the path parameter to "tcp", followed by a colon and then the port number that adb is forwarding.  On our host computer, we connect to this port with netcat and redirect output to a file.  We also select the "lime" formatting option.  When the acquisition process is complete, LiME will terminate the TCP connection.
+In the adb root shell, we install our kernel module using the insmod command.  To instruct the module to dump memory via TCP, we set the path parameter to `tcp`, followed by a colon and then the port number that adb is forwarding.  On our host computer, we connect to this port with netcat and redirect output to a file.  We also select the `lime` formatting option.  When the acquisition process is complete, LiME will terminate the TCP connection.
 The following command loads the kernel module via adb on the target Android device:
 ```bash
 insmod /sdcard/lime.ko "path=tcp:4444 format=lime"
@@ -131,7 +131,7 @@ Since the SD card could potentially contain other relevant evidence to the case,
 
 Fortunately, imaging the SD card on an Android device that will be subjected to live forensic analysis (including memory dumping) does not require removal of the SD card.  Tethering the device to a Linux machine, for example, and activating USB Storage exposes a /dev/sd? device that can be imaged using traditional means (e.g., using dd on the Linux box). Activating USB Storage mode unmounts the SD card on the Android device, so a forensically valid image can be obtained.
 
-With USB Storage mode deactivated, we copy the LiME kernel module to the device using the same steps described in the last section.  When installing the module using insmod, we set the path parameter to /sdcard/ram.lime to specify the file in which to write the memory dump.  We also select the `lime` format option:
+With USB Storage mode deactivated, we copy the LiME kernel module to the device using the same steps described in the last section.  When installing the module using insmod, we set the path parameter to `/sdcard/ram.lime` to specify the file in which to write the memory dump.  We also select the `lime` format option:
 ```bash
 insmod /sdcard/lime.ko "path=/sdcard/ram.lime format=lime"
 ```
