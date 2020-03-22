@@ -1,0 +1,5 @@
+obj-m := lime.o
+lime-objs := main.o tcp.o disk.o
+
+default:
+	$(MAKE) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) -C $(KSRC_PATH) M=$(shell pwd) modules
